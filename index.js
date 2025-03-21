@@ -129,7 +129,7 @@ Group Management (only if group is in allowedGroups):
 • Antiviewonce - View-once messages are forwarded to the owner.
 • Antiworld   - Messages containing banned words are automatically deleted.
 
-https://whatsapp.com/channel/0029VaJX1NzCxoAyVGHlfY2l
+www.whatsapp.com/channel/0029VaJX1NzCxoAyVGHlfY2l
 
 Enjoy using Queen Shakira Bot!`;
 }
