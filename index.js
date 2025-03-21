@@ -4,7 +4,7 @@ const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion,
 const { Boom } = require('@hapi/boom');
 const fs = require('fs');
 const express = require('express');
-const QRCode = require('qrcode'); // Install with: npm install qrcode
+const QRCode = require('qrcode'); // npm install qrcode
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -41,7 +41,7 @@ app.get('/pair', async (req, res) => {
     `);
   }
   // Construct the pairing URL (adjust the URL as needed for your pairing service)
-  const pairingUrl = `https://example.com/pair?number=${number}&bot=Queen%20Shakira`;
+  const pairingUrl = `https://queen-shakira-d3790e790c70.herokuapp.com/pair?number=${number}&bot=Queen%20Shakira`;
   try {
     const qrDataUrl = await QRCode.toDataURL(pairingUrl);
     res.send(`
@@ -79,11 +79,18 @@ const OWNER = '255657779003@s.whatsapp.net';
 let autoTyping = false;
 let autoRecording = false;
 let alwaysOnline = false;
-let autoStatusSeen = false;
-let autoStatusReact = false;
+let autoStatusSeen = true;
+let autoStatusReact = true;
 
 // Storage for antiworld banned words
 let antiWorldValues = [];
+
+// Orodha ya groups ambazo vipengele vingine vitafanya kazi (weka group IDs hapa)
+const allowedGroups = [
+  '120363365676830775@g.us',
+  '120363029115223817@g.us',
+  '120363045584007767@g.us'
+];
 
 // Utility: Get text from a message regardless of its type
 function getMessageText(msg) {
@@ -108,13 +115,16 @@ Owner Commands (only for owner):
 • auto status seen on/off   - Enable/disable auto status seen.
 • auto status react on/off  - Enable/disable auto reacting to status with 🔥.
 • set antiworld word1,word2 - Set banned words (antiworld).
+• getgroupid                - Get the current group's ID.
+• addgroup group_id         - Add a group (its ID) where full functionality works.
 
 User Commands:
 • pair <your_number>        - Generate a QR code/link to pair your WhatsApp with the bot.
+• ping                    - Get a ping response.
 • .menu or .help            - Show this help message.
 
-Group Management:
-• Anti-link   - Links in groups are automatically deleted with a warning.
+Group Management (only if group is in allowedGroups):
+• Anti-link   - Links are automatically deleted with a warning.
 • Anti-sticker - Stickers are automatically deleted with a warning.
 • Antiviewonce - View-once messages are forwarded to the owner.
 • Antiworld   - Messages containing banned words are automatically deleted.
@@ -122,6 +132,33 @@ Group Management:
 https://whatsapp.com/channel/0029VaJX1NzCxoAyVGHlfY2l
 
 Enjoy using Queen Shakira Bot!`;
+}
+
+// Hii ndiyo MENU unayotaka kama "list" yenye vifungo (ListMessage).
+async function sendFancyMenu(sock, jid) {
+  const sections = [
+    {
+      title: "MENU 🌺",
+      rows: [
+        { title: "YouTube 🌹", rowId: "id-youtube", description: "Visit YouTube channel" },
+        { title: "Telegram 💧", rowId: "id-telegram", description: "Open Telegram link" },
+        { title: "GitHub 🔵", rowId: "id-github", description: "Open GitHub link" },
+        { title: "WhatsApp 🍀", rowId: "id-whatsapp", description: "Join WhatsApp link" },
+        { title: "Owner 👤", rowId: "id-owner", description: "Contact Owner" },
+        { title: "Script 📄", rowId: "id-script", description: "Get script link" },
+      ]
+    }
+  ];
+
+  const listMessage = {
+    title: "Queen Shakira Bot Menu",
+    text: "Select an option from the list below:",
+    footer: "Powered by Queen Shakira Bot",
+    buttonText: "MENU",
+    sections
+  };
+
+  await sock.sendMessage(jid, listMessage);
 }
 
 // Function: Simulate presence update (auto typing, recording, always online)
@@ -158,79 +195,93 @@ async function startBot() {
     if (!messages || messages.length === 0) return;
     const msg = messages[0];
     if (!msg.message) return;
+
     const jid = msg.key.remoteJid;
-    // For groups, sender is in key.participant; otherwise use remoteJid.
     const sender = msg.key.participant || msg.key.remoteJid;
-    
+    const messageContent = getMessageText(msg).trim().toLowerCase();
+
+    // Basic commands (ping, getgroupid, .menu/.help, ping) work in any group.
+    const basicCommands = ['ping', 'getgroupid', '.menu', '.help'];
+    if (jid.endsWith('@g.us') && basicCommands.includes(messageContent)) {
+      // Process basic commands regardless of allowedGroups.
+      if (messageContent === 'ping') {
+        const start = Date.now();
+        await sock.sendMessage(jid, { text: '💫Pong!' });
+        const latency = Date.now() - start;
+        await sock.sendMessage(jid, { text: `Ping Speed: ${latency} ms` });
+        return;
+      }
+      if (messageContent === 'getgroupid') {
+        const groupMeta = await sock.groupMetadata(jid);
+        await sock.sendMessage(jid, { text: `Group ID: ${groupMeta.id}` });
+        return;
+      }
+      if (messageContent === '.menu' || messageContent === '.help') {
+        // Tumia fancy menu au help text
+        // Uncomment hapa ikiwa ungependa list message:
+        // await sendFancyMenu(sock, jid);
+        await sock.sendMessage(jid, { text: getHelpText() });
+        return;
+      }
+    }
+
+    // KAMA ni group, na kama sio basic command, basi angalia allowedGroups.
+    if (jid.endsWith('@g.us') && !allowedGroups.includes(jid)) {
+      // Group hii haiko kwenye allowedGroups, basi usifanye processing ya functionalities nyingine.
+      return;
+    }
+
     // ---------- ANTILINK (Group only) ----------
     if (jid.endsWith('@g.us')) {
-      const text = getMessageText(msg);
       const linkRegex = /(https?:\/\/[^\s]+)/gi;
-      if (linkRegex.test(text)) {
-        // Check if sender is admin; hapa unaweza kubainisha admin. Ikiwa si admin, futa.
+      if (linkRegex.test(messageContent)) {
         const groupMetadata = await sock.groupMetadata(jid);
-        // Wanaopata 'admin' ni wale ambao wana role ya admin, au "superadmin"
         const admins = groupMetadata.participants.filter(p => p.admin);
         const isAdmin = admins.some(a => a.id === sender);
         if (!isAdmin) {
           await sock.sendMessage(jid, { delete: msg.key });
-          await sock.sendMessage(jid, { 
-            text: `@${sender.split('@')[0]} Warning: 📌Links are not allowed in this group!`,
+          await sock.sendMessage(jid, {
+            text: `@${sender.split('@')[0]} Warning: Links are not allowed in this group!`,
             mentions: [sender]
           });
           return;
         }
       }
     }
-    
+
     // ---------- ANTISTICKER ----------
     if (msg.message.stickerMessage) {
       await sock.sendMessage(jid, { delete: msg.key });
-      await sock.sendMessage(jid, { 
-        text: `@${sender.split('@')[0]} Warning: Stickers is not allowed in this group!`,
+      await sock.sendMessage(jid, {
+        text: `@${sender.split('@')[0]} Warning: Stickers are not allowed in this chat!`,
         mentions: [sender]
       });
       return;
     }
 
     // ---------- ANTIVIEWONCE ----------
-  /*  if (msg.message?.viewOnceMessage) {
-      await sock.sendMessage(OWNER, { text: `Antiviewonce triggered. Forwarded view-once message:\n${JSON.stringify(msg.message)}` });
+    if (msg.message?.viewOnceMessage) {
+      const innerMsgObj = msg.message.viewOnceMessage.message;
+      if (innerMsgObj.imageMessage || innerMsgObj.videoMessage || innerMsgObj.audioMessage || innerMsgObj.documentMessage) {
+        await sock.copyNForward(OWNER, msg, true);
+      } else {
+        const innerText = getMessageText({ message: innerMsgObj });
+        if (innerText) {
+          await sock.sendMessage(OWNER, { text: `Antiviewonce triggered. Forwarded viewonce message:\n${innerText}` });
+        } else {
+          await sock.sendMessage(OWNER, { text: `Antiviewonce triggered. No text found:\n${JSON.stringify(innerMsgObj)}` });
+        }
+      }
       return;
-    }*/
-// ---------- ANTIVIEWONCE ----------
-if (msg.message?.viewOnceMessage) {
-  // Extract inner message object
-  const innerMsgObj = msg.message.viewOnceMessage.message;
-
-  // Kagua kama inner message ina media (image, video, audio, document)
-  if (innerMsgObj.imageMessage || innerMsgObj.videoMessage || innerMsgObj.audioMessage || innerMsgObj.documentMessage) {
-    // Tumia copyNForward ili kumpeleka ujumbe kamili wa media kwa OWNER
-    await sock.copyNForward(OWNER, msg, true);
-  } else {
-    // Kama ni maandishi, jaribu kupata maandishi na umpe owner
-    const innerText = getMessageText({ message: innerMsgObj });
-    if (innerText) {
-      await sock.sendMessage(OWNER, { text: `Antiviewonce triggered. Forwarded viewonce message:\n${innerText}` });
-    } else {
-      // Fallback: tuma JSON ya inner message kama maandishi hayapatikani
-      await sock.sendMessage(OWNER, { text: `Antiviewonce triggered. Forwarded viewonce message:\n${JSON.stringify(innerMsgObj)}` });
     }
-  }
-  return;
-}
-
-
-    // Get message content in lower case
-    let messageContent = getMessageText(msg).trim().toLowerCase();
 
     // ---------- ANTIWORLD ----------
     if (antiWorldValues.length > 0 && jid !== OWNER) {
       for (let word of antiWorldValues) {
         if (messageContent.includes(word.toLowerCase())) {
           await sock.sendMessage(jid, { delete: msg.key });
-          await sock.sendMessage(jid, { 
-            text: `@${sender.split('@')[0]} Warning: Message Bad Words or Group Mentioned are not allowed here📌.`,
+          await sock.sendMessage(jid, {
+            text: `@${sender.split('@')[0]} Warning: Message contains banned words.`,
             mentions: [sender]
           });
           return;
@@ -240,7 +291,6 @@ if (msg.message?.viewOnceMessage) {
 
     // ---------- STATUS HANDLING ----------
     if (jid === 'status@broadcast') {
-      console.log("New status detected");
       if (autoStatusSeen) {
         await sock.readMessages([msg.key]);
       }
@@ -249,7 +299,7 @@ if (msg.message?.viewOnceMessage) {
       }
       if (messageContent.includes('@g.us')) {
         await sock.sendMessage(jid, { delete: msg.key });
-        await sock.sendMessage(jid, { text: `Strong Warning: You've never sent a MENTION GROUP STATUS!` });
+        await sock.sendMessage(jid, { text: `Strong Warning: You've never sent a mention-group status!` });
         return;
       }
       return;
@@ -307,30 +357,48 @@ if (msg.message?.viewOnceMessage) {
         await sock.sendMessage(jid, { text: 'Auto status react disabled.' });
         return;
       }
+      
+      // The getgroupid command is already processed in basicCommands above,
+      // but if owner sends it from inbox or another context, process it here:
+      if (messageContent === 'getgroupid') {
+        if (!jid.endsWith('@g.us')) {
+          await sock.sendMessage(jid, { text: 'This is not a group!' });
+          return;
+        }
+        const groupMeta = await sock.groupMetadata(jid);
+        await sock.sendMessage(jid, { text: `Group ID: ${groupMeta.id}` });
+        return;
+      }
+      
       if (messageContent.startsWith('set antiworld ')) {
-        // Expected format: "set antiworld word1,word2,word3"
         let values = messageContent.replace('set antiworld ', '').split(',');
         antiWorldValues = values.map(v => v.trim());
         await sock.sendMessage(jid, { text: `Antiworld values set to: ${antiWorldValues.join(', ')}` });
         return;
       }
+      
+      if (messageContent.startsWith('addgroup ')) {
+        const newGroupId = messageContent.replace('addgroup ', '').trim();
+        if (!newGroupId.endsWith('@g.us')) {
+          await sock.sendMessage(jid, { text: 'Invalid group ID. Must end with @g.us' });
+          return;
+        }
+        if (!allowedGroups.includes(newGroupId)) {
+          allowedGroups.push(newGroupId);
+          await sock.sendMessage(jid, { text: `Group ${newGroupId} added to allowedGroups.` });
+        } else {
+          await sock.sendMessage(jid, { text: `Group ${newGroupId} is already in allowedGroups.` });
+        }
+        return;
+      }
     }
 
     // ---------- USER COMMANDS ----------
-    // Help/Menu command
-    if (messageContent === '.menu' || messageContent === '.help') {
-      await sock.sendMessage(jid, { text: getHelpText() });
-      return;
-    }
-    
-    // ---------- MULTIPLE SESSION PAIRING ----------
     if (messageContent.startsWith('pair ')) {
-      // Expected format: "pair <your_number>"
       const parts = messageContent.split(' ');
       if (parts.length === 2) {
         const number = parts[1];
-        // Generate a pairing URL (adjust as needed)
-        const pairingUrl = `https://example.com/pair?number=${number}&bot=Queen%20Shakira`;
+        const pairingUrl = `https://queen-shakira-d3790e790c70.herokuapp.com/pair?number=${number}&bot=Queen%20Shakira`;
         try {
           const qrBuffer = await QRCode.toBuffer(pairingUrl);
           await sock.sendMessage(jid, { image: qrBuffer, caption: `Scan this QR code to link your WhatsApp with Queen Shakira.` });
@@ -345,11 +413,8 @@ if (msg.message?.viewOnceMessage) {
 
     // ---------- SIMULATE PRESENCE ----------
     simulatePresence(sock, jid);
-    
-    // Other messages are not processed further
   });
 
-  // Handle connection updates with logging
   sock.ev.on('connection.update', (update) => {
     console.log('Connection update:', update);
     const { connection, lastDisconnect } = update;
