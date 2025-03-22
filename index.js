@@ -88,8 +88,7 @@ let antiWorldValues = [];
 // Orodha ya groups ambazo vipengele vingine vitafanya kazi (weka group IDs hapa)
 const allowedGroups = [
   '120363365676830775@g.us',
-  '120363029115223817@g.us',
-  '120363045584007767@g.us'
+  '120363029115223817@g.us'
 ];
 
 // Utility: Get text from a message regardless of its type
