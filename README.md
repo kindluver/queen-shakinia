@@ -24,13 +24,13 @@ Queen Shakira Whatsapp Bot
 <a href='https://github.com/basanzietech/queen-shakira/fork' target="_blank"><img alt='Fork repo' src='https://img.shields.io/badge/Fork Repo-100000?style=for-the-badge&logo=scan&logoColor=white&labelColor=black&color=black'/></a>
 
 2. Get  creds file
- <a href='https://queen-shakira.com/pair' target="_blank"><img alt='GET CREDS FILE' src='https://img.shields.io/badge/Get_Creds_File-100000?style=for-the-badge&logo=scan&logoColor=white&labelColor=black&color=black'/></a>
+ <a href='https://queen-shakira-pair.onrender.com/pairing' target="_blank"><img alt='GET CREDS FILE' src='https://img.shields.io/badge/Get_Creds_File-100000?style=for-the-badge&logo=scan&logoColor=white&labelColor=black&color=black'/></a>
 > upload creds.json file in auth_info Forder
  how to upload creds.json tutorial 👇
  
 [![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtube.com/@mkuyutv?si=R9dW4mqIT1iwhNZi)
 
-> if deploying on panel download zip and edit index.js change the pair code to true  tutorial Soon😎
+> if deploying on panel download zip and upload credits.json file in auth_info Forder tutorial Soon😎
  
 ### Queen Shakira deploy on Heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://dashboard.heroku.com/new?template=https://github.com/queen-shakira/queen-shakira) 
