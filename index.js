@@ -102,9 +102,11 @@ function getMessageText(msg) {
   return '';
 }
 
-// Function: Return help/menu text
+// Function: Return help/menu text with image
 function getHelpText() {
-  return `Queen Shakira Bot Help:
+  return {
+    image: { url: "https://files.catbox.moe/2kcb4s.jpeg" },
+    caption: `Queen Shakira Bot Help:
 
 Owner Commands (only for owner):
 • auto typing on/off       - Enable/disable auto typing indicator.
@@ -132,7 +134,8 @@ www.whatsapp.com/channel/0029VaJX1NzCxoAyVGHlfY2l
 > Bot Script Code / Repository
 www.github.com/basanzietech/queen-shakira
 
-Enjoy using Queen Shakira Bot!`;
+Enjoy using Queen Shakira Bot!`
+  };
 }
 
 // Hii ndiyo MENU unayotaka kama "list" yenye vifungo (ListMessage).
