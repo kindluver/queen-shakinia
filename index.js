@@ -106,7 +106,7 @@ function getMessageText(msg) {
 function getHelpText() {
   return {
     image: { url: "https://files.catbox.moe/2rf7lh.jpg" },
-    caption: `Queen Shakira Bot Help:
+    caption: `> *Queen Shakira Bot All Commands:*
 
 Owner Commands (only for owner):
 • auto typing on/off       - Enable/disable auto typing indicator.
@@ -135,7 +135,7 @@ www.whatsapp.com/channel/0029VaJX1NzCxoAyVGHlfY2l
 > Bot Script Code / Repository:
 www.github.com/basanzietech/queen-shakira
 
-Enjoy using Queen Shakira Bot!`
+> *@basanzietech | queen shakira*`
   };
 }
 
