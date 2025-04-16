@@ -105,7 +105,7 @@ function getMessageText(msg) {
 // Function: Return help/menu text with image
 function getHelpText() {
   return {
-    image: { url: "https://files.catbox.moe/2rf7lh.jpg" }
+    image: { url: "https://files.catbox.moe/2rf7lh.jpg" },
     caption: `Queen Shakira Bot Help:
 
 Owner Commands (only for owner):
