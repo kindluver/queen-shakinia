@@ -126,7 +126,7 @@ Group Management (only if group is in allowedGroups):
 • Anti-sticker - Stickers are automatically deleted with a warning.
 • Antiviewonce - View-once messages are forwarded to the owner.
 • Antiworld   - Messages containing banned words are automatically deleted.
-*Follow Whatsapp Channel*
+> Follow Whatsapp Channel
 www.whatsapp.com/channel/0029VaJX1NzCxoAyVGHlfY2l
 
 > Bot Script Code / Repository
