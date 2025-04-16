@@ -106,7 +106,7 @@ function getMessageText(msg) {
 function getHelpText() {
   return {
     image: { url: "https://files.catbox.moe/2rf7lh.jpg" },
-    caption: `> *Queen Shakira Bot All Commands:*
+    caption: `> *Queen Shakira Commands:*
 
 Owner Commands (only for owner):
 • auto typing on/off       - Enable/disable auto typing indicator.
