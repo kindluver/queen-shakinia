@@ -139,6 +139,29 @@ www.github.com/basanzietech/queen-shakira
   };
 }
 
+// Example usage inside your handler
+const { image, caption } = getHelpText();
+
+await conn.sendMessage(
+  m.chat,
+  {
+    image: image,
+    caption: caption,
+    contextInfo: {
+      mentionedJid: [m.sender],
+      isForwarded: true,
+      forwardingScore: 999,
+      forwardedNewsletterMessageInfo: {
+        newsletterJid: '0@newsletter', // Replace if needed
+        newsletterName: 'SHAKIRA-MD',
+        serverMessageId: -1
+      }
+    }
+  },
+  { quoted: m }
+);
+
+
 // Hii ni fancy menu kama list message (ikiwa ungependa)
 async function sendFancyMenu(sock, jid) {
   const sections = [
