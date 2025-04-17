@@ -10,7 +10,7 @@ const app = express();
 const port = process.env.PORT || 4000;
 
 // Channel details for "View channel" button
-const CHANNEL_JID   = '0029VaJX1NzCxoAyVGHlfY2l@broadcast';
+const CHANNEL_JID   = '0@newsletter';
 const CHANNEL_NAME  = 'SHAKIRA-MD';
 
 // Default contextInfo (adds "View channel" button)
