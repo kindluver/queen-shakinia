@@ -142,7 +142,7 @@ www.github.com/basanzietech/queen-shakira
 // Example usage inside your handler
 const { image, caption } = getHelpText();
 
-await conn.sendMessage(
+await sock.sendMessage(
   m.chat,
   {
     image: image,
