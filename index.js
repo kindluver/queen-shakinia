@@ -71,6 +71,8 @@ User Commands:
 • .pair <your_number>       - Generate a QR code/link to pair WhatsApp.
 • .ping                     - Get a ping response.
 • .menu or .help            - Show this help message.
+• .channeljid               - Show the WhatsApp Channel JID.
+• .getinvite or .invite     - Get this group's invite link.
 
 Group management (allowedGroups only):
 • Anti-link       - Deletes links with a warning.
@@ -130,8 +132,104 @@ async function startBot() {
     const textRaw = getMessageText(msg).trim();
     const lowerText = textRaw.toLowerCase();
 
-    // ---------- GROUP FILTERS (no prefix required) ----------
-    if (jid.endsWith('@g.us')) {
+    // Only commands with prefix '.'
+    if (textRaw.startsWith('.')) {
+      const command = textRaw.slice(1).toLowerCase();
+      defaultContext.contextInfo.mentionedJid = [sender];
+
+      // ---------- BASIC COMMANDS ----------
+      if (['ping','getgroupid','menu','help','channeljid','getinvite','invite'].includes(command)) {
+        // channel JID command
+        if (command === 'channeljid') {
+          await sock.sendMessage(jid, { text: `Channel JID: ${CHANNEL_JID}`, ...defaultContext });
+          return;
+        }
+        // group invite link
+        if (['getinvite','invite'].includes(command)) {
+          if (!jid.endsWith('@g.us')) {
+            await sock.sendMessage(jid, { text: 'This is not a group.', ...defaultContext });
+            return;
+          }
+          try {
+            const meta = await sock.groupMetadata(jid);
+            const code = meta.inviteCode;
+            if (code) {
+              await sock.sendMessage(jid, { text: `Invite link: https://chat.whatsapp.com/${code}`, ...defaultContext });
+            } else {
+              await sock.sendMessage(jid, { text: 'Unable to retrieve invite link.', ...defaultContext });
+            }
+          } catch {
+            await sock.sendMessage(jid, { text: 'Error fetching invite link.', ...defaultContext });
+          }
+          return;
+        }
+        // ping, getgroupid, menu/help
+        if (jid.endsWith('@g.us')) {
+          if (command === 'ping') {
+            const start = Date.now();
+            await sock.sendMessage(jid, { text: '💫 Pong!', ...defaultContext });
+            const latency = Date.now() - start;
+            await sock.sendMessage(jid, { text: `Speed: ${latency} ms`, ...defaultContext });
+          }
+          if (command === 'getgroupid') {
+            const meta = await sock.groupMetadata(jid);
+            await sock.sendMessage(jid, { text: `Group ID: ${meta.id}`, ...defaultContext });
+          }
+          if (['menu','help'].includes(command)) {
+            const help = getHelpText();
+            await sock.sendMessage(jid, { image: help.image, caption: help.caption, ...defaultContext });
+          }
+        }
+        return;
+      }
+
+      // Pairing command
+      if (command.startsWith('pair ')) {
+        const parts = textRaw.split(' ');
+        if (parts[1]) {
+          const url = `https://queen-shakira.herokuapp.com/pair?number=${parts[1]}&bot=Queen%20Shakira`;
+          try {
+            const qr = await QRCode.toBuffer(url);
+            await sock.sendMessage(jid,{image:qr,caption:'Scan to link.',...defaultContext});
+          } catch {
+            await sock.sendMessage(jid,{text:'Error generating QR.',...defaultContext});
+          }
+        } else {
+          await sock.sendMessage(jid,{text:'Use: .pair <number>',...defaultContext});
+        }
+        return;
+      }
+
+      // Owner commands
+      if (jid === OWNER) {
+        switch (command) {
+          case 'auto typing on': autoTyping=true; await sock.sendMessage(jid,{text:'Auto typing on',...defaultContext}); break;
+          case 'auto typing off': autoTyping=false; await sock.sendMessage(jid,{text:'Auto typing off',...defaultContext}); break;
+          case 'auto recording on': autoRecording=true; await sock.sendMessage(jid,{text:'Auto recording on',...defaultContext}); break;
+          case 'auto recording off': autoRecording=false; await sock.sendMessage(jid,{text:'Auto recording off',...defaultContext}); break;
+          case 'always online on': alwaysOnline=true; await sock.sendMessage(jid,{text:'Always online on',...defaultContext}); break;
+          case 'always online off': alwaysOnline=false; await sock.sendMessage(jid,{text:'Always online off',...defaultContext}); break;
+          case 'auto status seen on': autoStatusSeen=true; await sock.sendMessage(jid,{text:'Auto status seen on',...defaultContext}); break;
+          case 'auto status seen off': autoStatusSeen=false; await sock.sendMessage(jid,{text:'Auto status seen off',...defaultContext}); break;
+          case 'auto status react on': autoStatusReact=true; await sock.sendMessage(jid,{text:'Auto status react on',...defaultContext}); break;
+          case 'auto status react off': autoStatusReact=false; await sock.sendMessage(jid,{text:'Auto status react off',...defaultContext}); break;
+          default:
+            if (command.startsWith('set antiworld ')) {
+              antiWorldValues = command.replace('set antiworld ','').split(',').map(w=>w.trim());
+              await sock.sendMessage(jid,{text:`Antiworld set: ${antiWorldValues.join(', ')}`,...defaultContext});
+            } else if (command.startsWith('addgroup ')) {
+              const id = command.replace('addgroup ','').trim();
+              if (id.endsWith('@g.us') && !allowedGroups.includes(id)) { allowedGroups.push(id); await sock.sendMessage(jid,{text:`Added group ${id}`,...defaultContext}); }
+              else await sock.sendMessage(jid,{text:'Invalid or existing group ID.',...defaultContext});
+            }
+        }
+        return;
+      }
+
+    }
+
+    // ---------- GROUP FILTERS (allowedGroups only) ----------
+    if (jid.endsWith('@g.us') && allowedGroups.includes(jid)) {
       // Anti-link
       const linkRegex = /(https?:\/\/[^\s]+)/gi;
       if (linkRegex.test(lowerText)) {
@@ -139,11 +237,7 @@ async function startBot() {
         const isAdmin = meta.participants.some(p => p.admin && p.id === sender);
         if (!isAdmin) {
           await sock.sendMessage(jid, { delete: msg.key });
-          await sock.sendMessage(jid, {
-            text: `Warning: Links are not allowed!`,
-            mentions: [sender],
-            ...defaultContext
-          });
+          await sock.sendMessage(jid, { text: `Warning: Links are not allowed!`, mentions: [sender], ...defaultContext });
           return;
         }
       }
@@ -177,83 +271,12 @@ async function startBot() {
       return;
     }
 
-    // Only commands with prefix '.'
-    if (!textRaw.startsWith('.')) return;
-    const command = textRaw.slice(1).toLowerCase();
-    defaultContext.contextInfo.mentionedJid = [sender];
-
-    // ---------- BASIC COMMANDS ----------
-    if (['ping','getgroupid','menu','help'].includes(command)) {
-      if (jid.endsWith('@g.us')) {
-        if (command === 'ping') {
-          const start = Date.now();
-          await sock.sendMessage(jid, { text: '💫 Pong!', ...defaultContext });
-          const latency = Date.now() - start;
-          await sock.sendMessage(jid, { text: `Speed: ${latency} ms`, ...defaultContext });
-        }
-        if (command === 'getgroupid') {
-          const meta = await sock.groupMetadata(jid);
-          await sock.sendMessage(jid, { text: `Group ID: ${meta.id}`, ...defaultContext });
-        }
-        if (['menu','help'].includes(command)) {
-          const help = getHelpText();
-          await sock.sendMessage(jid, { image: help.image, caption: help.caption, ...defaultContext });
-        }
-      }
-      return;
-    }
-
-    // Restrict full features to allowed groups
-    if (jid.endsWith('@g.us') && !allowedGroups.includes(jid)) return;
-
-    // ---------- OWNER COMMANDS ----------
-    if (jid === OWNER) {
-      switch (command) {
-        case 'auto typing on': autoTyping=true; await sock.sendMessage(jid,{text:'Auto typing on',...defaultContext}); break;
-        case 'auto typing off': autoTyping=false; await sock.sendMessage(jid,{text:'Auto typing off',...defaultContext}); break;
-        case 'auto recording on': autoRecording=true; await sock.sendMessage(jid,{text:'Auto recording on',...defaultContext}); break;
-        case 'auto recording off': autoRecording=false; await sock.sendMessage(jid,{text:'Auto recording off',...defaultContext}); break;
-        case 'always online on': alwaysOnline=true; await sock.sendMessage(jid,{text:'Always online on',...defaultContext}); break;
-        case 'always online off': alwaysOnline=false; await sock.sendMessage(jid,{text:'Always online off',...defaultContext}); break;
-        case 'auto status seen on': autoStatusSeen=true; await sock.sendMessage(jid,{text:'Auto status seen on',...defaultContext}); break;
-        case 'auto status seen off': autoStatusSeen=false; await sock.sendMessage(jid,{text:'Auto status seen off',...defaultContext}); break;
-        case 'auto status react on': autoStatusReact=true; await sock.sendMessage(jid,{text:'Auto status react on',...defaultContext}); break;
-        case 'auto status react off': autoStatusReact=false; await sock.sendMessage(jid,{text:'Auto status react off',...defaultContext}); break;
-        default:
-          if (command.startsWith('set antiworld ')) {
-            antiWorldValues = command.replace('set antiworld ','').split(',').map(w=>w.trim());
-            await sock.sendMessage(jid,{text:`Antiworld set: ${antiWorldValues.join(', ')}`,...defaultContext});
-          } else if (command.startsWith('addgroup ')) {
-            const id = command.replace('addgroup ','').trim();
-            if (id.endsWith('@g.us') && !allowedGroups.includes(id)) { allowedGroups.push(id); await sock.sendMessage(jid,{text:`Added group ${id}`,...defaultContext}); }
-            else await sock.sendMessage(jid,{text:'Invalid or existing group ID.',...defaultContext});
-          }
-      }
-      return;
-    }
-
-    // ---------- USER COMMANDS ----------
-    if (command.startsWith('pair ')) {
-      const parts = textRaw.split(' ');
-      if (parts[1]) {
-        const url = `https://queen-shakira.herokuapp.com/pair?number=${parts[1]}&bot=Queen%20Shakira`;
-        try {
-          const qr = await QRCode.toBuffer(url);
-          await sock.sendMessage(jid,{image:qr,caption:'Scan to link.',...defaultContext});
-        } catch {
-          await sock.sendMessage(jid,{text:'Error generating QR.',...defaultContext});}
-      } else {
-        await sock.sendMessage(jid,{text:'Use: .pair <number>',...defaultContext});
-      }
-      return;
-    }
-
-    // Simulate presence (typing/recording/available)
+    // Simulate presence
     simulatePresence(sock, jid);
   });
 
-  sock.ev.on('connection.update', ({connection,lastDisconnect})=>{
-    if (connection==='close') {
+  sock.ev.on('connection.update', ({connection,lastDisconnect}) => {
+    if (connection === 'close') {
       if ((lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut) startBot();
     }
   });
