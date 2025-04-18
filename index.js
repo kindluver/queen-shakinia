@@ -221,75 +221,18 @@ async function startBot() {
         await sock.sendMessage(jid, { text: `Group ID: ${groupMeta.id}` });
         return;
       }
-      //*if (lowerText === '.menu' || lowerText === '.help') {
+      if (lowerText === '.menu' || lowerText === '.help') {
         // Tumia help text yenye image na caption
-    //*    const helpData = getHelpText();
-    //*    await sock.sendMessage(jid, { 
-    //*      image: { url: helpData.image.url },
-      //*    caption: helpData.caption
-    //    });
-    //*    return;
-   //*   }
-  //*  }
-          if (['menu','help'].includes(command)) {
-  const timeNow = new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' });
-  const name = msg.pushName || '👤 Mtumiaji';
-  const number = sender.replace(/[^0-9]/g, '');
-  const mentionTag = `@${number}`;
-
-  const menuText = `
-👑 *Queen Shakira Menu*
-
-🧍‍♂️ *User:* ${name} (${mentionTag})
-📞 *Number:* wa.me/${number}
-🕒 *Time:* ${timeNow}
-🤖 *Bot:* Queen Shakira
-
-╭─❏ *OWNER COMMANDS*
-│• auto typing on/off
-│• auto recording on/off
-│• always online on/off
-│• auto status seen on/off
-│• auto status react on/off
-│• set antiworld word1,word2
-│• getgroupid
-│• addgroup <group_id>
-╰─────────────
-
-╭─❏ *USER COMMANDS*
-│• .ping
-│• .menu / .help
-│• .pair <number>
-│• .channeljid <channel_link>
-│• .invite / .getinvite
-╰─────────────
-
-╭─❏ *GROUP FEATURES*
-│• Anti-link
-│• Anti-sticker
-│• Antiviewonce
-│• Antiworld
-╰─────────────
-
-📢 *Follow Channel:*
-https://www.whatsapp.com/channel/${CHANNEL_JID.replace('@broadcast', '')}
-
-💻 *Script:* github.com/basanzietech/queen-shakira
-
-👑 *Powered by BasanziE Tech*
-`;
-
-  await sock.sendMessage(jid, {
-    image: { url: 'https://files.catbox.moe/2rf7lh.jpg' },
-    caption: menuText.trim(),
-    contextInfo: {
-      ...defaultContext.contextInfo,
-      mentionedJid: [sender]
+       const helpData = getHelpText();
+       await sock.sendMessage(jid, { 
+         image: { url: helpData.image.url },
+          caption: helpData.caption,
+         https://www.whatsapp.com/channel/${CHANNEL_JID.replace('@broadcast', '')}
+        });
+       return;
+      }
     }
-  });
-  return;
-}
-
+          
     // Kama ni group na sio basic command, angalia allowedGroups.
     if (jid.endsWith('@g.us') && !allowedGroups.includes(jid)) {
       // Ikiwa group haipo kwenye allowedGroups, rudisha bila kufanya tena processing ya functionality nyingine.
