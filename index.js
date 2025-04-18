@@ -227,11 +227,11 @@ async function startBot() {
     //*    await sock.sendMessage(jid, { 
     //*      image: { url: helpData.image.url },
       //*    caption: helpData.caption
-        });
+    //    });
     //*    return;
    //*   }
   //*  }
-  iwe hivi                                                         if (['menu','help'].includes(command)) {
+          if (['menu','help'].includes(command)) {
   const timeNow = new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' });
   const name = msg.pushName || '👤 Mtumiaji';
   const number = sender.replace(/[^0-9]/g, '');
