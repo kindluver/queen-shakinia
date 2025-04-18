@@ -106,6 +106,7 @@ function getMessageText(msg) {
 function getHelpText() {
   return {
     image: { url: "https://files.catbox.moe/2rf7lh.jpg" },
+    channel: { url: "https://whatsapp.com/channel/0029VaJX1NzCxoAyVGHlfY2l"},
     caption: `> *Queen Shakira Commands:*
 
 Owner Commands (only for owner):
@@ -227,7 +228,7 @@ async function startBot() {
        await sock.sendMessage(jid, { 
          image: { url: helpData.image.url },
           caption: helpData.caption,
-         https://www.whatsapp.com/channel/${CHANNEL_JID.replace('@broadcast', '')}
+         channel: { url: helpData.channel.url }
         });
        return;
       }
