@@ -224,6 +224,14 @@ async function startBot() {
       }
       if (lowerText === '.menu' || lowerText === '.help') {
         // Tumia help text yenye image na caption
+        contextInfo: {
+      isForwarded: true,
+      forwardingScore: 999,
+      forwardedNewsletterMessageInfo: {
+        newsletterJid: '120363230794474148@newsletter',
+        newsletterName: global.author || 'Xlicon News',
+        serverMessageId: -1
+      },
        const helpData = getHelpText();
        await sock.sendMessage(jid, { 
          image: { url: helpData.image.url },
@@ -232,7 +240,7 @@ async function startBot() {
         });
        return;
       }
-    }
+   }
           
     // Kama ni group na sio basic command, angalia allowedGroups.
     if (jid.endsWith('@g.us') && !allowedGroups.includes(jid)) {
